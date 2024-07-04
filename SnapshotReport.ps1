@@ -1,8 +1,8 @@
 ﻿#Open vCenter1 Connection // Create authentication config.xml
 if (-not (Test-Path "$PSScriptRoot\config.xml")) {
 	Write-Host ""
-	$hostname = Read-Host "Input Hostname: " 
-	$user = Read-Host "Input Username: "
+	$hostname = Read-Host "Input Hostname" 
+	$user = Read-Host "Input Username"
 	$password = Read-Host "Input Password" 
 	New-VICredentialStoreItem -Host $hostname -User $user -Password $password -File "$PSScriptRoot\config.xml"
 }
@@ -193,5 +193,5 @@ function getSnapshots() {
 
 
 #Close vCenter Connection
-Disconnect-VIServer -Server * -Confirm:$false -Force -ErrorAction SilentlyContinue
 getSnapshots
+Disconnect-VIServer -Server * -Confirm:$false -Force -ErrorAction SilentlyContinue

@@ -1,16 +1,18 @@
-﻿#Open vCenter1 Connection // Create authentication config.xml
-if (-not (Test-Path "$PSScriptRoot\config.xml")) {
-	Write-Host ""
-	$hostname = Read-Host "Input Hostname" 
-	$user = Read-Host "Input Username"
-	$password = Read-Host "Input Password" 
-	New-VICredentialStoreItem -Host $hostname -User $user -Password $password -File "$PSScriptRoot\config.xml"
+﻿#Open vCenter1 Connection // Create authentication config.xml:
+function connect {
+	if (-not (Test-Path "$PSScriptRoot\config.xml")) {
+		Write-Host ""
+		$hostname = Read-Host "Input Hostname" 
+		$user = Read-Host "Input Domain\User"
+		$password = Read-Host "Input Password" 
+		New-VICredentialStoreItem -Host $hostname -User $user -Password $password -File "$PSScriptRoot\config.xml"
+	}
+
+	$config = Get-VICredentialStoreItem -File "$PSScriptRoot\config.xml"
+	$connected = Connect-VIServer -Server $config.Host -User $config.User -Password $config.Password -Force
+	return $connected
 }
-
-$config = Get-VICredentialStoreItem -File "$PSScriptRoot\config.xml"
-Connect-VIServer -Server $config.Host -User $config.User -Password $config.Password -Force
-
-#Global Variables
+#Global Variables:
 $germanCulture = [System.Globalization.CultureInfo]::GetCultureInfo("de-DE")
 
 #Functions:
@@ -44,7 +46,7 @@ function getSnapshots() {
 	$clusterName = (Get-Cluster).Name
 	$vmSnapshotsList = Get-VM | Get-Snapshot
 	$snapshotCount = ($vmSnapshotsList | Measure-Object).Count
-	$snapshotSizeMax = [Math]::Round(($vmSnapshotsList | Measure-Object -Property SizeMB -Sum).Sum,2)
+	$snapshotSizeMax = [Math]::Round(($vmSnapshotsList | Measure-Object -Property SizeMB -Sum).Sum, 2)
 	$oldestSnapshot = (($vmSnapshotsList | Sort-Object -Property Created | Select-Object -First 1).Created).ToString("d", $germanCulture)
 	$vmSnapshots = @{}
 	foreach ($snap in $vmSnapshotsList) {
@@ -148,7 +150,7 @@ function getSnapshots() {
 			$html += "<td>$($snap.Name)</td>"
 			$html += "<td>$([Math]::Round($snap.SizeMB,2))</td>"
 			$html += "<td>$(($snap.Created).ToString("d", $germanCulture))</td>"
-			$html += "<td>$($snap.Parent)"
+			$html += "<td>$($snap.ParentSnapshot)"
 			$html += "</tr>"
 		}
 	}
@@ -191,7 +193,8 @@ function getSnapshots() {
 	$html | Out-File -FilePath "$PSScriptRoot\results.html" -Encoding utf8
 }
 
-
-#Close vCenter Connection
-getSnapshots
-Disconnect-VIServer -Server * -Confirm:$false -Force -ErrorAction SilentlyContinue
+#Main:
+if (connect) {
+	getSnapshots
+	Disconnect-VIServer -Server * -Confirm:$false -Force -ErrorAction SilentlyContinue
+}
